@@ -1,8 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: 20 14.3% 4.1%;
+  --foreground: 0 0% 95%;
+  --card: 24 9.8% 10%;
+  --card-foreground: 0 0% 95%;
+  --popover: 0 0% 9%;
+  --popover-foreground: 0 0% 95%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 48%;
 }
 
 @theme inline {
@@ -23,4 +40,71 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.light-mode {
+  --background: 0 0% 100%;
+  --foreground: 222.2 47.4% 11.2%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 47.4% 11.2%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 217.2 91.2% 59.8%;
+}
+
+.light-mode body {
+  background-color: white;
+  color: rgb(17 24 39);
+}
+
+.light-mode .bg-gray-900 {
+  background-color: white;
+}
+
+.light-mode .bg-gray-800 {
+  background-color: rgb(249 250 251);
+}
+
+.light-mode .bg-gray-700 {
+  background-color: rgb(243 244 246);
+}
+
+.light-mode .text-white {
+  color: rgb(17 24 39);
+}
+
+.light-mode .text-gray-400 {
+  color: rgb(107 114 128);
+}
+
+.light-mode .text-gray-300 {
+  color: rgb(75 85 99);
+}
+
+.light-mode .border-gray-700 {
+  border-color: rgb(229 231 235);
+}
+
+.light-mode .hover\:bg-gray-700:hover {
+  background-color: rgb(243 244 246);
+}
+
+.light-mode .hover\:text-white:hover {
+  color: rgb(17 24 39);
+}
+
+.light-mode .bg-gray-700\/50 {
+  background-color: rgb(243 244 246);
 }

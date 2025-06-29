@@ -1,0 +1,253 @@
+📘 Cursor AI Engineering Rules – 2025 Edition
+This document defines the engineering standards, tools, patterns, and expectations for the Cursor AI project. It ensures that every team member writes clear, modern, maintainable, and high-performing code.
+
+Stack Highlights: TypeScript, React/Next.js, Expo (React Native), Tamagui, Node.js, MongoDB, Zod, Turbo Repo, Paystack, Zustand, React Query, Solito, i18next
+
+📐 Code Style & Structure
+Write concise, expressive TypeScript with minimal side effects.
+
+Use functional, declarative programming — avoid class components.
+
+Use meaningful variable/function names (hasAccess, getUserData, etc.).
+
+Use modular structure to avoid repetition.
+
+Organize each feature into:
+
+components/, screens/, hooks/, services/, types/, utils/
+
+Favor named exports.
+
+Use dash-case for folders: e.g., components/user-settings.
+
+🧬 TypeScript & Zod
+All code must be in TypeScript.
+
+Use interface for object shapes, type for unions and functions.
+
+Avoid enum; prefer literal unions or constant maps.
+
+Validate all external input with Zod schemas.
+
+Use satisfies and as const for safe inference when necessary.
+
+⚙️ Syntax & Formatting
+Use the function keyword for top-level functions.
+
+Keep conditionals clean:
+
+Prefer guard clauses.
+
+Avoid nested blocks where possible.
+
+Format code using Prettier and enforce rules via ESLint.
+
+Git hooks (husky, lint-staged) run formatting, type checks, and tests pre-commit.
+
+🎨 UI & Styling
+Use Tamagui for all UI and layout — across web and mobile.
+
+Follow a mobile-first, responsive design strategy.
+
+Maintain consistent spacing, typography, and theme tokens.
+
+Use styled() Tamagui components over inline styles.
+
+🧭 Navigation & Cross-Platform
+Use Solito for unified routing (web + mobile).
+
+Use .native.tsx, .web.tsx suffixes for platform-specific overrides.
+
+Prefer SolitoImage for universal image support.
+
+Use Link, useLink, useRouter, and route files from app/.
+
+📦 State & Data Fetching
+Use Zustand for local state management.
+
+Use TanStack React Query for server state, caching, and sync.
+
+Avoid unnecessary useEffect; favor derived or memoized state.
+
+Structure API interaction in feature-level hooks (e.g. useUser()).
+
+🌍 Internationalization (i18n)
+Use i18next + react-i18next for web, expo-localization for native.
+
+All text must be internationalized — no hardcoded strings.
+
+Use t('namespace:key') with fallback strategies.
+
+Structure translation files by feature or domain.
+
+🛠️ Error Handling & Validation
+Use Zod for request/response validation.
+
+Handle errors with guard clauses early in the function.
+
+Use custom error types or error factories for consistency.
+
+Log critical errors with context (in both frontend & backend).
+
+Display human-friendly error messages to users.
+
+Use try/catch blocks with specific fallback logic — no silent fails.
+
+🚀 Performance Optimization
+Use dynamic imports (next/dynamic) and lazy loading.
+
+Optimize layouts for render speed and user perception.
+
+Memoize pure components with React.memo.
+
+Optimize images with proper sizing, formats, and loading="lazy".
+
+Use FlashList for large native lists instead of FlatList.
+
+🧱 Backend & MongoDB (Node.js)
+Use Node.js (with TypeScript) for backend services:
+
+Either Next.js API routes or Express server in apps/api/.
+
+Use MongoDB via Mongoose or the native driver:
+
+Design normalized schemas with appropriate indexing.
+
+Use schema-based validation and unique constraints.
+
+Validate API inputs/outputs with Zod.
+
+Apply middleware layers for:
+
+Authentication (JWT/session),
+
+Rate limiting,
+
+CORS, and
+
+Input sanitization.
+
+Use .env files with dotenv or next.config.js to manage secrets.
+
+Organize backend into:
+
+routes/, controllers/, services/, middlewares/, models/, types/
+
+💳 Paystack Integration
+Use Paystack API for payments and subscriptions:
+
+initializeTransaction, verifyTransaction, createSubscription, etc.
+
+Store necessary metadata (user ID, tx ref, plan, status) in MongoDB.
+
+Create webhook endpoints to handle:
+
+subscription.create, subscription.disable, invoice.success, etc.
+
+Validate webhook authenticity via signature header.
+
+Sync subscription status in your database on every event.
+
+Deny access to premium features based on user subscription status.
+
+Present user-friendly payment error states and retry flows.
+
+🧰 Monorepo (Turborepo)
+Structure:
+
+markdown
+Copy
+Edit
+apps/
+  - web/ (Next.js)
+  - mobile/ (Expo)
+  - api/ (Node backend)
+packages/
+  - ui/ (Tamagui components)
+  - utils/
+  - hooks/
+  - types/
+  - schemas/
+  - i18n/
+Use turbo.json to define cacheable pipelines (build, lint, test, dev).
+
+Use yarn turbo gen to scaffold:
+
+new components, screens, hooks, and routes.
+
+Enforce boundaries via:
+
+tsconfig.paths.json + TypeScript project references,
+
+eslint-plugin-boundaries if needed.
+
+Keep package.json dependencies clean — no cross-app imports unless declared.
+
+🧪 Testing & QA
+Use Vitest or Jest for unit tests.
+
+Use React Testing Library for frontend components.
+
+Use Playwright (web) and Detox (native) for E2E tests.
+
+Test critical paths:
+
+Auth flow
+
+Payment/subscription handling
+
+Form validation
+
+Responsive rendering
+
+Add CI checks for test coverage, lint, and type correctness.
+
+📁 Environment & Config
+Use .env for secrets and environment-specific settings.
+
+For Expo: configure eas.json properly with profiles.
+
+For Next.js: use next.config.js for dynamic env binding.
+
+Log app version, environment, and build metadata on launch.
+
+📝 Commits, CI/CD, and Documentation
+Use Conventional Commits: feat:, fix:, chore:, docs:, test:
+
+Integrate CI/CD via GitHub Actions or Railway/Render/EAS.
+
+All new features or APIs must be documented in:
+
+README.md (if shared code),
+
+or inline JSDoc with examples.
+
+Include changelogs when publishing packages.
+
+🔍 Follow Official Documentation
+Always align with official and up-to-date docs:
+
+Next.js: https://nextjs.org/docs
+
+React Query: https://tanstack.com/query
+
+Tamagui: https://tamagui.dev/docs
+
+MongoDB: https://www.mongodb.com/docs
+
+Paystack: https://paystack.com/docs
+
+Zustand: https://docs.pmnd.rs/zustand
+
+Zod: https://zod.dev
+
+✅ Output Expectations
+All code must:
+
+Be readable, testable, and type-safe.
+
+Include helpful comments where logic is non-obvious.
+
+Be performance-optimized and mobile-first.
+
+Maintain high standards for DX (developer experience), security, and performance.
