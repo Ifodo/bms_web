@@ -2,7 +2,7 @@
   "name": "bms_web",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://autotrackiot.github.io/bms_web",
+  "homepage": "https://ifodo.github.io/bms_web",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
