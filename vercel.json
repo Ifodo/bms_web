@@ -4,7 +4,7 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["dfw1"],
+  "regions": ["sfo1"],
   "env": {
     "NEXT_PUBLIC_API_URL": "https://api.bms.autotrack.ng"
   }
