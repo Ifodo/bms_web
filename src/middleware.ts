@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { verifyToken } from '@/utils/jwt';
 
-export async function middleware() {
-  // Removed authentication check to allow direct access
+export function middleware() {
+  // Add your middleware logic here
   return NextResponse.next();
 }
 
