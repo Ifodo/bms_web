@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { sign } from 'jsonwebtoken';
 import { cookies } from 'next/headers';
+import { z } from 'zod';
+import jwt from 'jsonwebtoken';
 
 // Define the login request schema
 const loginSchema = z.object({
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     }
 
     // Generate JWT token
-    const token = sign(
+    const token = jwt.sign(
       {
         userId: MOCK_USER.id,
         email: MOCK_USER.email,
@@ -48,22 +48,14 @@ export async function POST(request: Request) {
     );
 
     // Set cookie
-    const cookieStore = cookies();
-    cookieStore.set('auth-token', token, {
+    const response = NextResponse.json({ success: true });
+    response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 60 * 60 * 24 // 24 hours
+      maxAge: 60 * 60 * 24 * 7 // 7 days
     });
-
-    return NextResponse.json({
-      message: "Login successful",
-      user: {
-        id: MOCK_USER.id,
-        email: MOCK_USER.email,
-        role: MOCK_USER.role
-      }
-    });
+    return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
