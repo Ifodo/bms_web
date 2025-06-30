@@ -1,16 +1,30 @@
-import React from 'react';
+'use client';
+
+import { useState } from 'react';
+import BatteryList from '@/components/BatteryList';
+import BatteryDetails from '@/components/BatteryDetails';
 
 export default function CellsPage() {
+  const [selectedBatteryId, setSelectedBatteryId] = useState<string | null>(null);
+
+  const handleViewDetails = (batteryId: string) => {
+    setSelectedBatteryId(batteryId);
+  };
+
+  const handleBack = () => {
+    setSelectedBatteryId(null);
+  };
+
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Battery Cells</h1>
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {/* Add your battery cells content here */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="font-semibold">Cell Information</h2>
-          <p className="text-gray-600">Coming soon...</p>
-        </div>
-      </div>
+    <div className="p-6 bg-gray-900 min-h-screen">
+      {selectedBatteryId ? (
+        <BatteryDetails
+          batteryId={selectedBatteryId}
+          onBack={handleBack}
+        />
+      ) : (
+        <BatteryList onViewDetails={handleViewDetails} />
+      )}
     </div>
   );
 } 
