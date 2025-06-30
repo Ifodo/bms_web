@@ -4,32 +4,28 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface User {
-  id: string;
+  _id: string;
   email: string;
   username: string;
   apiKey: string;
   chargingStation: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface LoginResponse {
   success: boolean;
   message: string;
-  user: {
-    _id: string;
-    email: string;
-    username: string;
-    apiKey: string;
-    chargingStation: string;
-    // Add any other fields from the response
-  };
+  code: number;
+  returnStatus: string;
   token: string;
+  user: User;
 }
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  loginResponse: LoginResponse | null;
   token: string | null;
 }
 
@@ -43,7 +39,6 @@ const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
   isLoading: true,
-  loginResponse: null,
   token: null,
 };
 
@@ -54,17 +49,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Check localStorage for user data, login response, and token on mount
+    // Check localStorage for user data and token on mount
     const storedUser = localStorage.getItem('user');
-    const storedLoginResponse = localStorage.getItem('loginResponse');
     const storedToken = localStorage.getItem('token');
     
-    if (storedUser && storedLoginResponse && storedToken) {
+    if (storedUser && storedToken) {
       const user = JSON.parse(storedUser);
-      const loginResponse = JSON.parse(storedLoginResponse);
       setState({
         user,
-        loginResponse,
         token: storedToken,
         isAuthenticated: true,
         isLoading: false,
@@ -76,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (credentials: { email: string; password: string }) => {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('https://api.bms.autotrack.ng/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
@@ -88,23 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(data.message || 'Login failed');
       }
 
-      // Save user data to localStorage
-      const userData: User = {
-        id: data.user._id,
-        email: data.user.email,
-        username: data.user.username,
-        apiKey: data.user.apiKey,
-        chargingStation: data.user.chargingStation,
-      };
-      
-      // Save user data, login response, and token
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('loginResponse', JSON.stringify(data));
+      // Save user data and token to localStorage
+      localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('token', data.token);
       
       setState({
-        user: userData,
-        loginResponse: data,
+        user: data.user,
         token: data.token,
         isAuthenticated: true,
         isLoading: false,
@@ -112,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       router.push('/dashboard');
     } catch (error) {
+      console.error('Login error:', error);
       throw error;
     }
   };
@@ -120,7 +102,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Clear localStorage
       localStorage.removeItem('user');
-      localStorage.removeItem('loginResponse');
       localStorage.removeItem('token');
       
       // Clear auth state
