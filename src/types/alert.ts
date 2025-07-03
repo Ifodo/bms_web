@@ -10,9 +10,11 @@ export interface Alert {
 }
 
 export interface AlertResponse {
+  [key: string]: Alert | boolean | string | number;
   success: boolean;
   message: string;
   code: number;
   returnStatus: string;
-  data: Alert[];
-} 
+}
+
+export type { Alert, AlertResponse }; 
