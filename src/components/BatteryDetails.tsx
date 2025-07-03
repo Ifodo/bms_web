@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BsArrowLeft, BsBatteryFull, BsBatteryHalf, BsBattery, BsExclamationTriangle, BsCheckCircle } from 'react-icons/bs';
 import { FaBolt } from 'react-icons/fa';
+import { useAuth } from '@/contexts/AuthContext';
+import { BatteryDataResponse, BatteryData, BatteryRecord } from '@/types/battery';
 
 interface BatteryCell {
   id: string;
@@ -49,91 +51,59 @@ interface BatteryDetailsProps {
 }
 
 export default function BatteryDetails({ batteryId, onBack }: BatteryDetailsProps) {
-  // Dummy data for demonstration
-  const batteryInfo: BatteryInfo = {
-    id: 'BMS-1000',
-    imei: '865432100000001',
-    sku: 'BMS-LI-48V-100AH',
-    manufacturer: 'AutoTrack',
-    model: 'AT-100-48',
-    soc: 95,
-    voltage: 48.2,
-    temperature: 25.6,
-    health: 96,
-    current: 0.26,
-    cycleCount: 207,
-    lastUpdate: '2024-03-28 14:30:22',
-    cells: Array.from({ length: 16 }, (_, i) => {
-      const baseVoltage = 3.0;
-      const randomVoltage = Math.random() * 0.5;
-      const baseTemp = 25;
-      const randomTemp = Math.random() * 5;
-      const voltage = baseVoltage + randomVoltage;
-      const temperature = baseTemp + randomTemp;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [batteryData, setBatteryData] = useState<BatteryData | null>(null);
+  const [currentRecord, setCurrentRecord] = useState<BatteryRecord | null>(null);
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    fetchBatteryDetails();
+  }, [batteryId]);
+
+  const fetchBatteryDetails = async () => {
+    try {
+      setLoading(true);
+      const token = getToken();
       
-      let status: BatteryCell['status'] = 'normal';
-      if (voltage > 3.6 || temperature > 35) {
-        status = 'critical';
-      } else if (voltage > 3.5 || temperature > 30) {
-        status = 'warning';
+      if (!token) {
+        setError('Authentication required');
+        return;
       }
 
-      return {
-        id: `Cell ${i + 1}`,
-        voltage: Number(voltage.toFixed(2)),
-        temperature: Number(temperature.toFixed(1)),
-        status
-      };
-    })
+      const response = await fetch(
+        `https://api.bms.autotrack.ng/devices/${batteryId}/data?page=1&limit=1`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+      
+      const data: BatteryDataResponse = await response.json();
+
+      if (data.success && data.data.length > 0) {
+        setBatteryData(data.data[0]);
+        setCurrentRecord(data.data[0].records[0]);
+        setError(null);
+      } else {
+        setError(data.message || 'Failed to fetch battery details');
+      }
+    } catch (err) {
+      setError('Failed to fetch battery details');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const alerts: Alert[] = [
-    {
-      id: 'alert1',
-      message: 'High voltage detected in cell C12',
-      timestamp: '2024-03-28 14:28:45',
-      type: 'warning',
-      status: 'active'
-    },
-    {
-      id: 'alert2',
-      message: 'Critical temperature in cell C8',
-      timestamp: '2024-03-28 14:25:03',
-      type: 'critical',
-      status: 'acknowledged'
-    },
-    {
-      id: 'alert3',
-      message: 'Low voltage warning in cell C15',
-      timestamp: '2024-03-28 14:20:15',
-      type: 'warning',
-      status: 'active'
+  const getCellStatus = (voltage: number, temperature: number): BatteryCell['status'] => {
+    if (voltage > 3.7 || temperature > 30) {
+      return 'critical';
+    } else if (voltage > 3.65 || temperature > 28) {
+      return 'warning';
     }
-  ];
-
-  const faults: SystemFault[] = [
-    {
-      id: 'fault1',
-      code: 'F001',
-      message: 'Communication timeout with cell C16',
-      timestamp: '2024-03-28 14:27:54',
-      status: 'active'
-    },
-    {
-      id: 'fault2',
-      code: 'F003',
-      message: 'Temperature sensor malfunction in cell C4',
-      timestamp: '2024-03-28 14:15:54',
-      status: 'resolved'
-    },
-    {
-      id: 'fault3',
-      code: 'F002',
-      message: 'Voltage sensor calibration error in cell C10',
-      timestamp: '2024-03-28 14:22:30',
-      status: 'active'
-    }
-  ];
+    return 'normal';
+  };
 
   const getStatusColor = (status: BatteryCell['status']) => {
     switch (status) {
@@ -161,6 +131,24 @@ export default function BatteryDetails({ batteryId, onBack }: BatteryDetailsProp
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !batteryData || !currentRecord) {
+    return (
+      <div className="text-red-400 text-center py-8">
+        {error || 'No data available'}
+      </div>
+    );
+  }
+
+  const { bms } = currentRecord;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -172,8 +160,8 @@ export default function BatteryDetails({ batteryId, onBack }: BatteryDetailsProp
           <BsArrowLeft className="w-5 h-5 text-gray-400" />
         </button>
         <div>
-          <h2 className="text-xl font-bold text-white">{batteryInfo.id}</h2>
-          <p className="text-sm text-gray-400">IMEI: {batteryInfo.imei}</p>
+          <h2 className="text-xl font-bold text-white">{batteryData.deviceType}</h2>
+          <p className="text-sm text-gray-400">Device ID: {batteryData.deviceId}</p>
         </div>
       </div>
 
@@ -183,7 +171,7 @@ export default function BatteryDetails({ batteryId, onBack }: BatteryDetailsProp
           <p className="text-sm text-gray-400">State of Charge</p>
           <div className="flex items-center space-x-2 mt-1">
             <BsBatteryFull className="w-5 h-5 text-green-400" />
-            <span className="text-2xl font-bold text-white">{batteryInfo.soc}%</span>
+            <span className="text-2xl font-bold text-white">{bms.stateOfCharge.toFixed(1)}%</span>
           </div>
         </div>
 
@@ -191,14 +179,14 @@ export default function BatteryDetails({ batteryId, onBack }: BatteryDetailsProp
           <p className="text-sm text-gray-400">Total Voltage</p>
           <div className="flex items-center space-x-2 mt-1">
             <FaBolt className="w-5 h-5 text-blue-400" />
-            <span className="text-2xl font-bold text-white">{batteryInfo.voltage}V</span>
+            <span className="text-2xl font-bold text-white">{bms.batteryVoltage.packVoltage1.toFixed(1)}V</span>
           </div>
         </div>
 
         <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
           <p className="text-sm text-gray-400">Temperature</p>
           <div className="flex items-center space-x-2 mt-1">
-            <span className="text-2xl font-bold text-white">{batteryInfo.temperature}°C</span>
+            <span className="text-2xl font-bold text-white">{bms.temperatures[0].toFixed(1)}°C</span>
           </div>
         </div>
 
@@ -206,7 +194,7 @@ export default function BatteryDetails({ batteryId, onBack }: BatteryDetailsProp
           <p className="text-sm text-gray-400">Health</p>
           <div className="flex items-center space-x-2 mt-1">
             <BsCheckCircle className="w-5 h-5 text-green-400" />
-            <span className="text-2xl font-bold text-white">{batteryInfo.health}%</span>
+            <span className="text-2xl font-bold text-white">{bms.stateOfHealth.toFixed(1)}%</span>
           </div>
         </div>
       </div>
@@ -216,20 +204,20 @@ export default function BatteryDetails({ batteryId, onBack }: BatteryDetailsProp
         <h3 className="text-lg font-semibold text-white mb-4">Battery Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div>
-            <p className="text-sm text-gray-400">IMEI</p>
-            <p className="text-white">{batteryInfo.imei}</p>
+            <p className="text-sm text-gray-400">Device ID</p>
+            <p className="text-white">{batteryData.deviceId}</p>
           </div>
           <div>
             <p className="text-sm text-gray-400">Current</p>
-            <p className="text-white">{batteryInfo.current}A</p>
+            <p className="text-white">{bms.batteryVoltage.current1.toFixed(2)}A</p>
           </div>
           <div>
             <p className="text-sm text-gray-400">Cycle Count</p>
-            <p className="text-white">{batteryInfo.cycleCount} cycles</p>
+            <p className="text-white">{bms.cycleCount} cycles</p>
           </div>
           <div>
             <p className="text-sm text-gray-400">Last Update</p>
-            <p className="text-white">{batteryInfo.lastUpdate}</p>
+            <p className="text-white">{new Date(currentRecord.timestamp).toLocaleString()}</p>
           </div>
         </div>
       </div>
@@ -238,81 +226,41 @@ export default function BatteryDetails({ batteryId, onBack }: BatteryDetailsProp
       <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Battery Cells</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-          {batteryInfo.cells.map((cell, index) => (
-            <div
-              key={cell.id}
-              className={`p-3 rounded-lg border ${getStatusColor(cell.status)} relative`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-400">{cell.id}</span>
-                {cell.status !== 'normal' && (
-                  <BsExclamationTriangle className={`w-4 h-4 ${getStatusTextColor(cell.status)}`} />
-                )}
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-white">V: {cell.voltage.toFixed(2)}</p>
-                <p className="text-sm text-white">T: {cell.temperature.toFixed(1)}°</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Alerts and Faults */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Active Alerts */}
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Active Alerts</h3>
-          <div className="space-y-4">
-            {alerts.map(alert => (
+          {[
+            ...bms.batteryCellVoltagesGroup1,
+            ...bms.batteryCellVoltagesGroup2,
+            ...bms.batteryCellVoltagesGroup3,
+            ...bms.batteryCellVoltagesGroup4,
+            ...bms.batteryCellVoltagesGroup5,
+            ...bms.batteryCellVoltagesGroup6,
+          ].map((voltage, index) => {
+            const temperature = bms.batteryCellTemperatures[index % bms.batteryCellTemperatures.length];
+            const status = getCellStatus(voltage, temperature);
+            
+            return (
               <div
-                key={alert.id}
-                className={`p-4 rounded-lg ${
-                  alert.type === 'critical' ? 'bg-red-900/20 border-red-500/30' : 'bg-yellow-900/20 border-yellow-500/30'
-                } border`}
+                key={`cell-${index + 1}`}
+                className={`p-3 rounded-lg border ${getStatusColor(status)} relative`}
               >
-                <p className={`${alert.type === 'critical' ? 'text-red-400' : 'text-yellow-400'}`}>
-                  {alert.message}
-                </p>
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-sm text-gray-400">{alert.timestamp}</span>
-                  <span className={`text-sm px-2 py-1 rounded-full ${
-                    alert.status === 'active' ? 'bg-red-500/10 text-red-400' :
-                    alert.status === 'acknowledged' ? 'bg-green-500/10 text-green-400' :
-                    'bg-gray-500/10 text-gray-400'
-                  }`}>
-                    {alert.status.charAt(0).toUpperCase() + alert.status.slice(1)}
-                  </span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-400">Cell {index + 1}</span>
+                  {status !== 'normal' && (
+                    <BsExclamationTriangle className={`w-4 h-4 ${getStatusTextColor(status)}`} />
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm">
+                    <span className="text-gray-400">V: </span>
+                    <span className="text-white">{voltage.toFixed(2)}V</span>
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-gray-400">T: </span>
+                    <span className="text-white">{temperature.toFixed(1)}°C</span>
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* System Faults */}
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">System Faults</h3>
-          <div className="space-y-4">
-            {faults.map(fault => (
-              <div
-                key={fault.id}
-                className={`p-4 rounded-lg ${
-                  fault.status === 'active' ? 'bg-red-900/20 border-red-500/30' : 'bg-gray-800 border-gray-600'
-                } border`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">{fault.code}</span>
-                  <span className={`text-sm px-2 py-1 rounded-full ${
-                    fault.status === 'active' ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'
-                  }`}>
-                    {fault.status.charAt(0).toUpperCase() + fault.status.slice(1)}
-                  </span>
-                </div>
-                <p className="text-white mt-1">{fault.message}</p>
-                <p className="text-sm text-gray-400 mt-2">{fault.timestamp}</p>
-              </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </div>
     </div>
