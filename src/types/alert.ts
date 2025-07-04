@@ -15,6 +15,4 @@ export interface AlertResponse {
   message: string;
   code: number;
   returnStatus: string;
-}
-
-export type { Alert, AlertResponse }; 
+} 

@@ -24,6 +24,18 @@ interface BatteryResponse {
   };
 }
 
+interface BatteryDistribution {
+  success: boolean;
+  message: string;
+  code: number;
+  returnStatus: string;
+  data: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
+}
+
 interface BatteryLocation {
   longitude: number;
   latitude: number;
@@ -117,5 +129,6 @@ export type {
   BatteryDataResponse,
   BatteryRecord,
   BMS,
-  BatteryLocation
+  BatteryLocation,
+  BatteryDistribution
 }; 

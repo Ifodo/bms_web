@@ -23,5 +23,10 @@ export async function getRecentAlerts(): Promise<Alert[]> {
     throw new Error(data.message || 'Failed to fetch recent alerts');
   }
 
-  return data.data || [];
+  // Convert object to array, filtering out non-Alert properties
+  const alertArray = Object.entries(data)
+    .filter(([key]) => !isNaN(Number(key)))
+    .map(([_, value]) => value as Alert);
+
+  return alertArray;
 } 
