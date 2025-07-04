@@ -53,6 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
     
+    console.log('Stored token on mount:', storedToken); // Debug log
+    
     if (storedUser && storedToken) {
       const user = JSON.parse(storedUser);
       setState({
@@ -63,11 +65,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } else {
       setState({ ...initialState, isLoading: false });
+      // If no token is found, redirect to login
+      router.push('/');
     }
   }, []);
 
   const login = async (credentials: { email: string; password: string }) => {
     try {
+      console.log('Attempting login...'); // Debug log
+      
       const response = await fetch('https://api.bms.autotrack.ng/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const data: LoginResponse = await response.json();
+      console.log('Login response:', data); // Debug log
 
       if (!data.success) {
         throw new Error(data.message || 'Login failed');
@@ -115,7 +122,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getToken = () => {
-    return state.token || localStorage.getItem('token');
+    const contextToken = state.token;
+    const localToken = localStorage.getItem('token');
+    console.log('Getting token - Context:', contextToken, 'Local:', localToken); // Debug log
+    return contextToken || localToken;
   };
 
   const value: AuthContextType = {

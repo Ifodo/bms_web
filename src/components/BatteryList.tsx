@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FiSearch } from 'react-icons/fi';
 
 interface BatteryListProps {
-  onViewDetails?: (batteryId: string) => void;
+  onViewDetails?: (deviceId: string) => void;
 }
 
 export default function BatteryList({ onViewDetails = () => {} }: BatteryListProps) {
@@ -16,47 +16,57 @@ export default function BatteryList({ onViewDetails = () => {} }: BatteryListPro
   const [error, setError] = useState<string | null>(null);
   const [meta, setMeta] = useState<BatteryResponse['meta'] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const { getToken } = useAuth();
+  const { getToken, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    fetchBatteries();
-  }, [currentPage]);
+    if (isAuthenticated) {
+      fetchBatteries();
+    }
+  }, [currentPage, isAuthenticated]);
 
   const fetchBatteries = async () => {
     try {
       setLoading(true);
+      setError(null);
       const token = getToken();
+      
+      console.log('Fetching batteries - Auth state:', { isAuthenticated, hasToken: !!token });
       
       if (!token) {
         setError('Authentication required');
         return;
       }
 
-      const queryParams = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '5',
-      });
-
       const response = await fetch(
-        `https://api.bms.autotrack.ng/devices?${queryParams}`,
+        `https://api.bms.autotrack.ng/devices?page=${currentPage}&limit=5`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
-          },
+            'Content-Type': 'application/json'
+          }
         }
       );
-      
+
+      if (!response.ok) {
+        console.error('API Error:', response.status, response.statusText);
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+
       const data: BatteryResponse = await response.json();
+      console.log('API Response:', data);
 
       if (data.success) {
+        console.log('Setting batteries:', data.data);
         setBatteries(data.data);
         setMeta(data.meta);
         setError(null);
       } else {
-        setError(data.message);
+        console.log('Error from API:', data.message);
+        setError(data.message || 'Failed to fetch batteries');
       }
     } catch (err) {
-      setError('Failed to fetch batteries');
+      console.error('Fetch error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch batteries');
     } finally {
       setLoading(false);
     }
@@ -67,10 +77,12 @@ export default function BatteryList({ onViewDetails = () => {} }: BatteryListPro
   };
 
   const filteredBatteries = batteries.filter(battery => {
+    if (!searchQuery) return true;
     const searchLower = searchQuery.toLowerCase();
     return (
       battery.deviceName.toLowerCase().includes(searchLower) ||
-      battery.deviceType.toLowerCase().includes(searchLower)
+      battery.deviceType.toLowerCase().includes(searchLower) ||
+      battery.deviceId.toLowerCase().includes(searchLower)
     );
   });
 
@@ -88,96 +100,36 @@ export default function BatteryList({ onViewDetails = () => {} }: BatteryListPro
     );
   };
 
-  const renderPaginationButtons = () => {
-    if (!meta) return null;
-
-    const totalPages = parseInt(meta.totalPages.toString());
-    const currentPageNum = parseInt(meta.currentPage);
-    const buttons = [];
-
-    // Previous button
-    buttons.push(
-      <button
-        key="prev"
-        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-        disabled={currentPage === 1}
-        className={`px-4 py-2 rounded-lg ${
-          currentPage === 1
-            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-            : 'bg-blue-500 text-white hover:bg-blue-600'
-        }`}
-      >
-        Previous
-      </button>
-    );
-
-    // Page numbers
-    for (let i = 1; i <= totalPages; i++) {
-      if (
-        i === 1 || // First page
-        i === totalPages || // Last page
-        (i >= currentPageNum - 1 && i <= currentPageNum + 1) // Pages around current
-      ) {
-        buttons.push(
-          <button
-            key={i}
-            onClick={() => setCurrentPage(i)}
-            className={`px-4 py-2 rounded-lg ${
-              i === currentPageNum
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-white hover:bg-blue-500'
-            }`}
-          >
-            {i}
-          </button>
-        );
-      } else if (
-        i === currentPageNum - 2 ||
-        i === currentPageNum + 2
-      ) {
-        // Add ellipsis
-        buttons.push(
-          <span key={`ellipsis-${i}`} className="px-3 py-2 text-gray-400">
-            ...
-          </span>
-        );
-      }
-    }
-
-    // Next button
-    buttons.push(
-      <button
-        key="next"
-        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-        disabled={currentPage === totalPages}
-        className={`px-4 py-2 rounded-lg ${
-          currentPage === totalPages
-            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-            : 'bg-blue-500 text-white hover:bg-blue-600'
-        }`}
-      >
-        Next
-      </button>
-    );
-
-    return buttons;
-  };
-
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className="flex justify-center items-center min-h-[400px] bg-gray-900">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <p className="text-white mt-4">Loading batteries...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-red-400 text-center py-8">
-        {error}
+      <div className="flex justify-center items-center min-h-[400px] bg-gray-900">
+        <div className="text-red-400 text-center py-8">
+          <p className="text-xl">Error</p>
+          <p className="mt-2">{error}</p>
+          <button
+            onClick={fetchBatteries}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
+
+  console.log('Rendering batteries:', batteries);
+  console.log('Filtered batteries:', filteredBatteries);
 
   return (
     <div className="bg-gray-900 min-h-screen">
@@ -192,7 +144,7 @@ export default function BatteryList({ onViewDetails = () => {} }: BatteryListPro
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search batteries..."
+                placeholder="Search by name, type, or ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-2 pl-10 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:border-blue-500"
@@ -207,10 +159,11 @@ export default function BatteryList({ onViewDetails = () => {} }: BatteryListPro
               <thead>
                 <tr className="text-left border-b border-gray-700">
                   <th className="pb-3 px-4 text-gray-400 font-medium w-[80px] text-center border-r border-gray-700">No</th>
-                  <th className="pb-3 px-4 text-gray-400 font-medium w-1/4 border-r border-gray-700">Battery</th>
-                  <th className="pb-3 px-4 text-gray-400 font-medium w-1/4 border-r border-gray-700">Type</th>
-                  <th className="pb-3 px-4 text-gray-400 font-medium w-1/4 border-r border-gray-700">Status</th>
-                  <th className="pb-3 px-4 text-gray-400 font-medium w-1/4 text-right">Actions</th>
+                  <th className="pb-3 px-4 text-gray-400 font-medium border-r border-gray-700">Battery</th>
+                  <th className="pb-3 px-4 text-gray-400 font-medium border-r border-gray-700">Device ID</th>
+                  <th className="pb-3 px-4 text-gray-400 font-medium border-r border-gray-700">Type</th>
+                  <th className="pb-3 px-4 text-gray-400 font-medium border-r border-gray-700">Status</th>
+                  <th className="pb-3 px-4 text-gray-400 font-medium text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -224,7 +177,12 @@ export default function BatteryList({ onViewDetails = () => {} }: BatteryListPro
                         <span>{battery.deviceName}</span>
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-white border-r border-gray-700">{battery.deviceType}</td>
+                    <td className="py-4 px-4 text-white border-r border-gray-700">
+                      {battery.deviceId}
+                    </td>
+                    <td className="py-4 px-4 text-white border-r border-gray-700">
+                      {battery.deviceType}
+                    </td>
                     <td className="py-4 px-4 border-r border-gray-700">
                       {getStatusBadge(battery.isActive)}
                     </td>
@@ -242,10 +200,34 @@ export default function BatteryList({ onViewDetails = () => {} }: BatteryListPro
             </table>
           </div>
 
-          {/* Enhanced Pagination */}
+          {/* Pagination */}
           {meta && meta.totalPages > 1 && (
             <div className="mt-6 flex justify-center items-center space-x-2">
-              {renderPaginationButtons()}
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className={`px-4 py-2 rounded-lg ${
+                  currentPage === 1
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                }`}
+              >
+                Previous
+              </button>
+              <span className="text-gray-400">
+                Page {currentPage} of {meta.totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(meta.totalPages, prev + 1))}
+                disabled={currentPage === meta.totalPages}
+                className={`px-4 py-2 rounded-lg ${
+                  currentPage === meta.totalPages
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                }`}
+              >
+                Next
+              </button>
             </div>
           )}
         </div>

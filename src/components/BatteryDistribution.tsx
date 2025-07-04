@@ -1,9 +1,10 @@
 'use client';
 
+import React from 'react';
 import { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { BsBatteryFull, BsBatteryHalf, BsBattery } from 'react-icons/bs';
+import { BsBatteryFull, BsBatteryHalf, BsBattery, BsArrowClockwise } from 'react-icons/bs';
 
 interface BatteryRange {
   range: string;
@@ -85,8 +86,6 @@ export default function BatteryDistribution() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
   }, [fetchData]);
 
   if (loading) {
@@ -133,39 +132,42 @@ export default function BatteryDistribution() {
     return 'text-green-400';
   };
 
-  const totalBatteries = distribution.reduce((sum, item) => sum + item.count, 0);
-
   return (
-    <div>
-      <div className="mb-6 bg-gray-700/50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-white">
-          Total Batteries: <span className="text-blue-400">{totalBatteries}</span>
-        </h3>
+    <div className="space-y-4">
+      {/* Header with Refresh Button */}
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-white text-sm font-medium">Battery Distribution</h3>
+        <button
+          onClick={fetchData}
+          disabled={loading}
+          className="p-2 hover:bg-gray-700 rounded-full transition-colors"
+        >
+          <BsArrowClockwise className={`w-5 h-5 text-gray-400 ${loading ? 'animate-spin' : 'hover:text-white'}`} />
+        </button>
       </div>
-      
-      <div className="space-y-4">
-        {distribution.map((item, index) => (
-          <div 
-            key={index} 
-            className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors"
-          >
-            <div className="flex items-center space-x-3">
-              {getBatteryIcon(item.range)}
-              <span className={`font-medium ${getRangeColor(item.range)}`}>
-                {item.range}
-              </span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-300">
-                {item.count} {item.count === 1 ? 'battery' : 'batteries'}
-              </span>
-              <span className="text-sm text-gray-400">
-                ({item.percentage}%)
-              </span>
-            </div>
+
+      {/* Distribution List */}
+      {distribution.map((item, index) => (
+        <div 
+          key={index} 
+          className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors"
+        >
+          <div className="flex items-center space-x-3">
+            {getBatteryIcon(item.range)}
+            <span className={`font-medium ${getRangeColor(item.range)}`}>
+              {item.range}
+            </span>
           </div>
-        ))}
-      </div>
+          <div className="flex items-center space-x-4">
+            <span className="text-gray-300">
+              {item.count} {item.count === 1 ? 'battery' : 'batteries'}
+            </span>
+            <span className="text-sm text-gray-400">
+              ({item.percentage}%)
+            </span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 } 
